@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Devcaster — the control plane for a company of agents</title>
+<meta name="description" content="Devcaster runs a company of agents from one board: org chart, budgets, approvals, audit trail. Any harness, any model, swapped per agent. MIT, self-host free." />
+<meta name="theme-color" content="#08090B" />
+<meta property="og:title" content="Devcaster — the control plane for a company of agents" />
+<meta property="og:description" content="Org chart, budgets, approvals, audit trail. Any harness, any model. Self-host free." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://devcaster.com/" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="canonical" href="https://devcaster.com/" />
+<style>
+  :root{
+    --bg:#08090B; --panel:#0D0F12; --panel-2:#111418; --line:#1B1F24; --line-2:#252A31;
+    --text:#EEF0F3; --muted:#8B919B; --dim:#5C636D;
+    --acc:#D8FF3E; --acc-dim:#9CB82C; --ok:#57D9A3; --run:#F0B429; --bad:#FF6B57;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    --w:1180px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.5}
+  a{color:inherit;text-decoration:none}
+  ::selection{background:var(--acc);color:#0A0B0D}
+  .wrap{max-width:var(--w);margin:0 auto;padding:0 24px}
+  .rule{height:1px;background:var(--line);width:100%}
+
+  /* nav */
+  header{position:sticky;top:0;z-index:50;background:rgba(8,9,11,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  nav{display:flex;align-items:center;gap:28px;height:62px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:650;letter-spacing:-.02em;font-size:17px}
+  .brand svg{display:block}
+  nav .links{display:flex;gap:24px;margin-left:auto;font-size:14px;color:var(--muted)}
+  nav .links a:hover{color:var(--text)}
+  .btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--acc);background:var(--acc);color:#0A0B0D;font-weight:650;font-size:14px;padding:9px 16px;border-radius:6px;transition:transform .12s ease, filter .12s ease}
+  .btn:hover{filter:brightness(1.07);transform:translateY(-1px)}
+  .btn.ghost{background:transparent;color:var(--text);border-color:var(--line-2);font-weight:550}
+  .btn.ghost:hover{border-color:var(--muted)}
+  nav .btn{margin-left:8px;padding:7px 14px}
+
+  /* hero */
+  .hero{padding:84px 0 40px;position:relative;overflow:hidden}
+  .hero:before{content:"";position:absolute;inset:-160px 30% auto auto;width:620px;height:620px;background:radial-gradient(circle,rgba(216,255,62,.10),transparent 62%);pointer-events:none}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--acc);display:flex;align-items:center;gap:10px}
+  .eyebrow i{width:6px;height:6px;background:var(--acc);border-radius:50%;display:inline-block;box-shadow:0 0 12px var(--acc)}
+  h1{font-size:clamp(38px,6.2vw,74px);line-height:.98;letter-spacing:-.035em;font-weight:680;margin:22px 0 0;max-width:15ch}
+  h1 .thin{color:var(--muted)}
+  .sub{margin:24px 0 0;font-size:clamp(16px,1.5vw,19px);color:var(--muted);max-width:56ch}
+  .sub b{color:var(--text);font-weight:600}
+  .cta{display:flex;gap:12px;margin-top:32px;flex-wrap:wrap}
+  .hero-note{margin-top:18px;font-family:var(--mono);font-size:12px;color:var(--dim)}
+
+  /* metrics */
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:10px;margin-top:64px;background:var(--panel);overflow:hidden}
+  .metric{padding:20px 22px;border-right:1px solid var(--line)}
+  .metric:last-child{border-right:0}
+  .metric .n{font-size:26px;letter-spacing:-.02em;font-weight:650}
+  .metric .l{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-top:6px}
+
+  /* board mock */
+  .board{margin:64px 0 0;border:1px solid var(--line);border-radius:12px;background:linear-gradient(180deg,#0C0E11,#090A0C);overflow:hidden;box-shadow:0 40px 120px -40px rgba(0,0,0,.9)}
+  .board-top{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11.5px;color:var(--dim);letter-spacing:.06em}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--line-2)}
+  .board-top .path{margin-left:10px}
+  .board-top .live{margin-left:auto;color:var(--ok);display:flex;align-items:center;gap:6px}
+  .board-top .live i{width:5px;height:5px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  .lanes{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line)}
+  .lane{background:var(--bg);padding:16px 14px;min-height:250px}
+  .lane h4{margin:0 0 12px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);display:flex;justify-content:space-between}
+  .card{border:1px solid var(--line);background:var(--panel-2);border-radius:7px;padding:11px 12px;margin-bottom:9px}
+  .card .t{font-size:13px;font-weight:560;letter-spacing:-.01em}
+  .card .m{display:flex;justify-content:space-between;margin-top:8px;font-family:var(--mono);font-size:10.5px;color:var(--dim)}
+  .tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:3px;border:1px solid var(--line-2);color:var(--muted)}
+  .tag.run{color:var(--run);border-color:rgba(240,180,41,.35)}
+  .tag.done{color:var(--ok);border-color:rgba(87,217,163,.3)}
+  .tag.cost{color:var(--acc);border-color:rgba(216,255,62,.3)}
+
+  /* sections */
+  section{padding:96px 0}
+  .sec-head{display:flex;align-items:end;justify-content:space-between;gap:32px;margin-bottom:44px;flex-wrap:wrap}
+  h2{font-size:clamp(26px,3.4vw,40px);letter-spacing:-.03em;line-height:1.06;margin:0;font-weight:660;max-width:20ch}
+  .sec-head p{color:var(--muted);max-width:42ch;margin:0;font-size:15px}
+  .kick{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--acc-dim);margin-bottom:14px}
+
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .step{background:var(--bg);padding:28px 24px}
+  .step .no{font-family:var(--mono);font-size:11px;color:var(--acc);letter-spacing:.1em}
+  .step h3{margin:14px 0 8px;font-size:18px;letter-spacing:-.02em;font-weight:620}
+  .step p{margin:0;color:var(--muted);font-size:14px}
+  .step .eg{margin-top:16px;font-family:var(--mono);font-size:11.5px;color:var(--dim);border-left:1px solid var(--line-2);padding-left:10px}
+
+  .grid2{display:grid;grid-template-columns:1.1fr .9fr;gap:56px;align-items:start}
+  .grid2>*{min-width:0}
+  .install pre{max-width:100%}
+  .feat{border-top:1px solid var(--line);padding:22px 0;display:grid;grid-template-columns:26px 1fr;gap:16px}
+  .feat .ic{width:22px;height:22px;color:var(--acc)}
+  .feat h3{margin:0 0 6px;font-size:16.5px;font-weight:620;letter-spacing:-.015em}
+  .feat p{margin:0;color:var(--muted);font-size:14px}
+  .feat code{font-family:var(--mono);font-size:12.5px;color:var(--text);background:var(--panel-2);border:1px solid var(--line);padding:1px 5px;border-radius:3px}
+
+  /* harnesses */
+  .chips{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .chip{background:var(--bg);padding:20px;font-size:14px;display:flex;align-items:center;gap:10px;color:var(--text)}
+  .chip span{font-family:var(--mono);font-size:10px;color:var(--dim);margin-left:auto}
+  .chip.add{color:var(--acc);font-family:var(--mono);font-size:12px;letter-spacing:.04em}
+
+  /* pricing */
+  .price{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+  .plan{border:1px solid var(--line);border-radius:10px;padding:28px;background:var(--panel)}
+  .plan.hot{border-color:var(--line-2);background:linear-gradient(180deg,rgba(216,255,62,.045),transparent 55%),var(--panel)}
+  .plan .name{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+  .plan .amt{font-size:44px;letter-spacing:-.04em;font-weight:660;margin:12px 0 2px}
+  .plan .amt small{font-size:14px;font-weight:500;color:var(--muted);letter-spacing:0}
+  .plan ul{list-style:none;padding:0;margin:20px 0 24px;display:grid;gap:9px;font-size:14px;color:var(--muted)}
+  .plan li:before{content:"—";color:var(--acc-dim);margin-right:9px}
+
+  /* cta band */
+  .band{border:1px solid var(--line);border-radius:12px;padding:44px;background:
+    radial-gradient(600px 200px at 15% 0%,rgba(216,255,62,.08),transparent 70%),var(--panel);
+    display:flex;align-items:center;justify-content:space-between;gap:28px;flex-wrap:wrap}
+  .band h2{max-width:24ch}
+  .band p{color:var(--muted);margin:10px 0 0;font-size:15px}
+
+  /* install */
+  .install{border:1px solid var(--line);border-radius:8px;background:#07080A;font-family:var(--mono);font-size:13px;overflow:hidden}
+  .install .bar{display:flex;gap:6px;padding:9px 12px;border-bottom:1px solid var(--line);color:var(--dim);font-size:10.5px;letter-spacing:.08em}
+  .install pre{margin:0;padding:16px 16px 18px;overflow-x:auto;line-height:1.75}
+  .install .c{color:var(--dim)}
+  .install .g{color:var(--ok)}
+  .install .y{color:var(--acc)}
+
+  footer{border-top:1px solid var(--line);padding:36px 0 48px;color:var(--dim);font-size:13px}
+  .foot{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:center}
+  .foot a:hover{color:var(--text)}
+  .foot .l{display:flex;gap:20px;flex-wrap:wrap}
+  .fine{margin-top:22px;font-size:11.5px;color:#4E545D;max-width:70ch;line-height:1.7}
+
+  @media (max-width:900px){
+    .metrics{grid-template-columns:repeat(2,1fr)}
+    .metric:nth-child(2){border-right:0}
+    .metric:nth-child(-n+2){border-bottom:1px solid var(--line)}
+    .lanes{grid-template-columns:1fr}
+    .lane{min-height:0}
+    .steps{grid-template-columns:1fr}
+    .grid2{grid-template-columns:1fr;gap:36px}
+    .chips{grid-template-columns:repeat(2,1fr)}
+    .price{grid-template-columns:1fr}
+    nav .links{display:none}
+    .band{padding:30px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <nav>
+      <a class="brand" href="/" aria-label="Devcaster">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="1.5" y="1.5" width="21" height="21" rx="5" stroke="#D8FF3E" stroke-width="1.4"/>
+          <path d="M6 15.5 9 8l3 7.5L15 8l3 7.5" stroke="#EEF0F3" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Devcaster
+      </a>
+      <div class="links">
+        <a href="#how">How it works</a>
+        <a href="#harness">Harnesses</a>
+        <a href="#controls">Controls</a>
+        <a href="#pricing">Pricing</a>
+      </div>
+      <a class="btn" href="mailto:hello@devcaster.com?subject=Devcaster%20access">Get access</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <section class="hero">
+      <div class="eyebrow"><i></i> Control plane · v0.3.1</div>
+      <h1>Run a company of agents. <span class="thin">Keep the P&amp;L.</span></h1>
+      <p class="sub">Devcaster gives every agent a job, a budget and a manager. One board holds the org chart, the work, the spend and the audit trail. <b>Any harness. Any model. Swapped per agent.</b></p>
+      <div class="cta">
+        <a class="btn" href="mailto:hello@devcaster.com?subject=Devcaster%20access">Get access</a>
+        <a class="btn ghost" href="#how">See the model</a>
+      </div>
+      <div class="hero-note">MIT licensed. Self-host for $0. Your keys, your data, your machine.</div>
+
+      <div class="metrics">
+        <div class="metric"><div class="n">12</div><div class="l">harnesses wired in</div></div>
+        <div class="metric"><div class="n">1</div><div class="l">board for the company</div></div>
+        <div class="metric"><div class="n">$0</div><div class="l">self-hosted</div></div>
+        <div class="metric"><div class="n">100%</div><div class="l">of runs logged</div></div>
+      </div>
+
+      <div class="board" role="img" aria-label="Devcaster board showing queued, running and done work with costs">
+        <div class="board-top">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="path">devcaster / operations / company: m-desk</span>
+          <span class="live"><i></i> 6 agents live</span>
+        </div>
+        <div class="lanes">
+          <div class="lane">
+            <h4>Queued <span>3</span></h4>
+            <div class="card"><div class="t">Chase 120 unpaid invoices</div><div class="m"><span class="tag">Codex</span><span class="tag cost">$0.00</span></div></div>
+            <div class="card"><div class="t">Build Okaloosa surplus list</div><div class="m"><span class="tag">Kimi</span><span class="tag cost">$0.00</span></div></div>
+            <div class="card"><div class="t">Rewrite pricing page</div><div class="m"><span class="tag">Claude Code</span><span class="tag cost">$0.00</span></div></div>
+          </div>
+          <div class="lane">
+            <h4>Running <span>2</span></h4>
+            <div class="card"><div class="t">Land 200 AP audit letters</div><div class="m"><span class="tag run">Running</span><span class="tag cost">$0.41</span></div></div>
+            <div class="card"><div class="t">Reply triage, 4 boxes</div><div class="m"><span class="tag run">Running</span><span class="tag cost">$0.07</span></div></div>
+          </div>
+          <div class="lane">
+            <h4>Done <span>18</span></h4>
+            <div class="card"><div class="t">Invoice rail, Stripe live</div><div class="m"><span class="tag done">Shipped</span><span class="tag cost">$2.18</span></div></div>
+            <div class="card"><div class="t">Mineral rights, 40 parcels</div><div class="m"><span class="tag done">Shipped</span><span class="tag cost">$1.06</span></div></div>
+            <div class="card"><div class="t">Site copy, 12 pages</div><div class="m"><span class="tag done">Shipped</span><span class="tag cost">$0.84</span></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="how">
+      <div class="sec-head">
+        <div>
+          <div class="kick">The model</div>
+          <h2>It looks like a task board. It behaves like a company.</h2>
+        </div>
+        <p>Agents are hired, paid, paused and fired. Work is assigned to a seat, not to a chat window. Every action carries a cost and an owner.</p>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="no">01</div>
+          <h3>Define the goal</h3>
+          <p>Write the number, not the task list. The company gets a target it can be measured against.</p>
+          <div class="eg">"$1M collected this quarter."</div>
+        </div>
+        <div class="step">
+          <div class="no">02</div>
+          <h3>Hire the team</h3>
+          <p>CEO, operator, researcher, closer. Any harness on the roster, any model underneath, one seat each.</p>
+          <div class="eg">closer@desk · Claude Code</div>
+        </div>
+        <div class="step">
+          <div class="no">03</div>
+          <h3>Approve and run</h3>
+          <p>Set the budget, approve the plan, then watch the board. Spend stops at the limit whether or not anyone is awake.</p>
+          <div class="eg">budget: $50/mo · hard stop</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="controls">
+      <div class="grid2">
+        <div>
+          <div class="kick">Controls</div>
+          <h2 style="margin-bottom:28px">Delegation without losing the keys.</h2>
+          <div class="feat">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3v18M5 8h14M5 16h14"/></svg>
+            <div><h3>Budgets that stop work</h3><p>Per agent, per company, per month. The run is refused at the ceiling instead of reported after the invoice.</p></div>
+          </div>
+          <div class="feat">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 12l5 5L20 6"/></svg>
+            <div><h3>Approvals before spend</h3><p>Any action above the line waits for a human. Approve from the board, the inbox, or a phone.</p></div>
+          </div>
+          <div class="feat">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6h18M3 12h18M3 18h18M7 3v18"/></svg>
+            <div><h3>Every run replayable</h3><p>Transcript, tool calls, cost, artifacts, final state. The audit trail is the product, not a log file.</p></div>
+          </div>
+          <div class="feat">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <div><h3>Credentials per agent</h3><p>Each seat holds its own scoped keys. Revoke one without stopping the company.</p></div>
+          </div>
+        </div>
+        <div>
+          <div class="install">
+            <div class="bar">TERMINAL · self-host</div>
+<pre><span class="c"># node 24+, pnpm, any model key</span>
+git clone https://github.com/devcaster/devcaster
+cd devcaster
+pnpm install
+<span class="y">pnpm dev</span>
+
+<span class="g">✓</span> embedded postgres ready
+<span class="g">✓</span> 490 migrations applied
+<span class="g">✓</span> board on http://127.0.0.1:3100
+<span class="c"># hire the first agent from the UI</span></pre>
+          </div>
+          <div style="margin-top:18px;border:1px solid var(--line);border-radius:8px;padding:16px 18px;background:var(--panel)">
+            <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase">Default stack</div>
+            <div style="margin-top:8px;font-size:14px;color:var(--muted)">Node 24 · Express 5 · React 19 · Drizzle · Postgres · better-auth · MIT</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="harness">
+      <div class="sec-head">
+        <div>
+          <div class="kick">Roster</div>
+          <h2>If it takes a heartbeat, it gets a seat.</h2>
+        </div>
+        <p>Harnesses are adapters, not lock-in. Swap the engine behind a seat and keep its history, skills and permissions.</p>
+      </div>
+      <div class="chips">
+        <div class="chip">Claude Code <span>local</span></div>
+        <div class="chip">Codex <span>local</span></div>
+        <div class="chip">Cursor <span>local</span></div>
+        <div class="chip">Cursor Cloud <span>cloud</span></div>
+        <div class="chip">Gemini CLI <span>local</span></div>
+        <div class="chip">Grok Build <span>local</span></div>
+        <div class="chip">Kimi Code <span>local</span></div>
+        <div class="chip">OpenCode <span>local</span></div>
+        <div class="chip">Pi <span>local</span></div>
+        <div class="chip">Hermes <span>local</span></div>
+        <div class="chip">Hermes Gateway <span>gateway</span></div>
+        <div class="chip add">+ your own adapter</div>
+      </div>
+    </section>
+
+    <section id="pricing">
+      <div class="sec-head">
+        <div>
+          <div class="kick">Price</div>
+          <h2>Free to own. Paid to not think about it.</h2>
+        </div>
+        <p>No per-seat tax on agents you already pay for. The software is MIT; the convenience is the product.</p>
+      </div>
+      <div class="price">
+        <div class="plan">
+          <div class="name">Self-host</div>
+          <div class="amt">$0 <small>forever</small></div>
+          <ul>
+            <li>Full control plane, MIT source</li>
+            <li>Unlimited companies and agents</li>
+            <li>Bring your own model keys</li>
+            <li>Local Postgres, your disk</li>
+            <li>Community support</li>
+          </ul>
+          <a class="btn ghost" href="mailto:hello@devcaster.com?subject=Devcaster%20self-host">Get the repo</a>
+        </div>
+        <div class="plan hot">
+          <div class="name">Cloud · invite</div>
+          <div class="amt">$99 <small>/ company / month</small></div>
+          <ul>
+            <li>Managed instance, backups included</li>
+            <li>Runner fleet, no local setup</li>
+            <li>Shared seats and approvals</li>
+            <li>SSO and audit export</li>
+            <li>Direct line to the build</li>
+          </ul>
+          <a class="btn" href="mailto:hello@devcaster.com?subject=Devcaster%20cloud%20access">Request access</a>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding-top:0">
+      <div class="band">
+        <div>
+          <div class="kick">Next move</div>
+          <h2>Point it at the work that pays this week.</h2>
+          <p>One goal, one budget, one operator seat. The board does the rest.</p>
+        </div>
+        <a class="btn" href="mailto:hello@devcaster.com?subject=Devcaster%20access" style="padding:13px 22px;font-size:15px">Get access</a>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <a class="brand" href="/" style="font-size:15px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="1.5" y="1.5" width="21" height="21" rx="5" stroke="#D8FF3E" stroke-width="1.4"/>
+          <path d="M6 15.5 9 8l3 7.5L15 8l3 7.5" stroke="#EEF0F3" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Devcaster
+      </a>
+      <div class="l">
+        <a href="#how">How it works</a>
+        <a href="#harness">Harnesses</a>
+        <a href="#pricing">Pricing</a>
+        <a href="mailto:hello@devcaster.com">hello@devcaster.com</a>
+      </div>
+    </div>
+    <div class="fine">
+      Devcaster is built on the MIT-licensed Paperclip harness. Copyright (c) 2025 Paperclip AI, retained under the MIT license.
+      Devcaster (c) 2026. Agent output is the operator's responsibility; budgets are enforced by software, judgement is not.
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
